@@ -399,7 +399,7 @@ export function RedirectPage() {
 
           {/* Architecture Disclaimer */}
           <p className="text-[11px] text-slate-500 text-center leading-relaxed">
-            Notice: LinkPulse is running in local demonstration mode. Short links resolve inside this browser session.
+            Notice: Linko is running in local demonstration mode. Short links resolve inside this browser session.
             Click events and analytics are recorded to local browser storage.
           </p>
         </Card>

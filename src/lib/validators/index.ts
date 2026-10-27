@@ -126,8 +126,9 @@ export function validateUrl(
 
   // Self loop prevention
   if (
+    hostname === 'linko.io' ||
+    hostname === 'linko.app' ||
     hostname === 'linkpulse.io' ||
-    hostname === 'linkpulse.app' ||
     (typeof window !== 'undefined' && hostname === window.location.hostname)
   ) {
     return { valid: false, error: 'Self-referencing redirects are not permitted.' };

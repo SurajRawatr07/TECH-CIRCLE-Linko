@@ -186,7 +186,7 @@ export function LinkDetailsPage() {
     const url = URL.createObjectURL(blob);
     const linkEl = document.createElement('a');
     linkEl.href = url;
-    linkEl.download = `linkpulse-qr-${link?.shortCode}.svg`;
+    linkEl.download = `linko-qr-${link?.shortCode}.svg`;
     document.body.appendChild(linkEl);
     linkEl.click();
     document.body.removeChild(linkEl);

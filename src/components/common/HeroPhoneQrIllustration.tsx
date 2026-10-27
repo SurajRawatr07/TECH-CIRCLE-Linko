@@ -22,7 +22,7 @@ export function HeroPhoneQrIllustration({ className = '' }: HeroPhoneQrIllustrat
     <div
       className={`relative w-full flex items-center justify-center select-none ${className}`}
       role="img"
-      aria-label="Interactive LinkPulse Smartphone with QR Code and Person Animation"
+      aria-label="Interactive Linko Smartphone with QR Code and Person Animation"
       onMouseEnter={() => setIsInteracting(true)}
       onMouseLeave={() => setIsInteracting(false)}
     >
@@ -248,7 +248,7 @@ export function HeroPhoneQrIllustration({ className = '' }: HeroPhoneQrIllustrat
               <rect x="0" y="0" width="186" height="38" rx="12" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" filter="url(#badgeShadow)" />
               <circle cx="18" cy="19" r="10" fill="#f0fdf4" />
               <path d="M 14 19 L 17 22 L 23 16" stroke="#16a34a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              <text x="34" y="18" fill="#0f172a" fontSize="10.5" fontWeight="700" fontFamily="sans-serif">linkpulse.to/pro</text>
+              <text x="34" y="18" fill="#0f172a" fontSize="10.5" fontWeight="700" fontFamily="sans-serif">linko.to/pro</text>
               <text x="34" y="29" fill="#14b8a6" fontSize="8.5" fontWeight="600" fontFamily="sans-serif">Live Redirect · 12ms</text>
               {/* Green live dot */}
               <circle cx="170" cy="19" r="3.5" fill="#22c55e" />

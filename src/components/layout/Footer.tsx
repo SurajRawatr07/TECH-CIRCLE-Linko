@@ -7,8 +7,8 @@ export function Footer() {
 
   return (
     <footer className="w-full bg-neutral-950 text-neutral-400 border-t border-neutral-800 transition-colors">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-neutral-800/80">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-neutral-800/80">
           {/* Brand Info */}
           <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-3">
             <Link
@@ -18,41 +18,41 @@ export function Footer() {
               <div className="w-7 h-7 rounded-lg bg-white text-neutral-950 flex items-center justify-center font-bold text-xs">
                 <Link2 className="w-4 h-4 stroke-[2.4]" />
               </div>
-              <span>LinkPulse</span>
+              <span>Linko</span>
             </Link>
             <span className="hidden sm:inline text-neutral-700 py-1">·</span>
             <p className="text-xs sm:text-sm text-neutral-400 max-w-sm sm:py-0.5">
-              URL shortening and real-time click intelligence.
+              Shorten smarter. Share safer.
             </p>
           </div>
 
-          {/* Quick Footer Links */}
+          {/* Clean minimal footer links */}
           <div className="flex flex-wrap items-center justify-center gap-6 text-xs sm:text-sm">
             <Link to="/" className="text-neutral-400 hover:text-white transition-colors">
               Home
             </Link>
-            <a href="#how-it-works" className="text-neutral-400 hover:text-white transition-colors">
-              How It Works
+            <Link to="/shorten" className="text-neutral-400 hover:text-white transition-colors">
+              Guest Shorten
+            </Link>
+            <a href="/#features" className="text-neutral-400 hover:text-white transition-colors">
+              Features
             </a>
-            <a href="#faq" className="text-neutral-400 hover:text-white transition-colors">
+            <a href="/#faq" className="text-neutral-400 hover:text-white transition-colors">
               FAQ
             </a>
-            <Link to="/login" className="text-neutral-400 hover:text-white transition-colors">
-              Sign In
-            </Link>
-            <Link to="/register" className="text-neutral-300 hover:text-white font-medium transition-colors">
-              Get Started
+            <Link to="/auth/login" className="text-neutral-400 hover:text-white transition-colors">
+              Login
             </Link>
           </div>
         </div>
 
-        {/* Bottom copyright & attribution */}
+        {/* Bottom copyright & local mode info */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neutral-500">
           <p className="text-center sm:text-left">
-            © {currentYear} LinkPulse. All rights reserved.
+            © {currentYear} Linko. All rights reserved.
           </p>
-          <p className="text-center sm:text-right font-mono text-[11px] text-neutral-500">
-            Open URL Infrastructure & Analytics
+          <p className="text-center sm:text-right text-[11px] text-neutral-500">
+            Link Security & Shortening Architecture
           </p>
         </div>
       </div>

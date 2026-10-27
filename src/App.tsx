@@ -33,16 +33,11 @@ import { TagsPage } from './pages/TagsPage';
 import { SettingsPage } from './pages/SettingsPage';
 
 // Admin Pages
-import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 import { AdminOverviewPage } from './pages/admin/AdminOverviewPage';
 import { AdminLinksPage } from './pages/admin/AdminLinksPage';
+import { AdminSecurityPage } from './pages/admin/AdminSecurityPage';
+import { AdminActivityPage } from './pages/admin/AdminActivityPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
-import { AdminAbusePage } from './pages/admin/AdminAbusePage';
-import { AdminBlocklistPage } from './pages/admin/AdminBlocklistPage';
-import { AdminDestinationAlertsPage } from './pages/admin/AdminDestinationAlertsPage';
-import { AdminAnomaliesPage } from './pages/admin/AdminAnomaliesPage';
-import { AdminAuditLogPage } from './pages/admin/AdminAuditLogPage';
-import { AdminPoliciesPage } from './pages/admin/AdminPoliciesPage';
 
 export default function App() {
   const { init: initAuth } = useAuthStore();
@@ -65,16 +60,20 @@ export default function App() {
             </PublicLayout>
           }
         />
+        {/* Guest Shortening - Canonical at /shorten, alias at /guest */}
         <Route
-          path="/guest"
+          path="/shorten"
           element={
             <PublicLayout>
               <GuestPage />
             </PublicLayout>
           }
         />
+        <Route path="/guest" element={<Navigate to="/shorten" replace />} />
+
+        {/* Shared Authentication Routes (/auth/login and /auth/signup) */}
         <Route
-          path="/login"
+          path="/auth/login"
           element={
             <PublicLayout>
               <LoginPage />
@@ -82,45 +81,21 @@ export default function App() {
           }
         />
         <Route
-          path="/signin"
-          element={
-            <PublicLayout>
-              <LoginPage />
-            </PublicLayout>
-          }
-        />
-        <Route
-          path="/register"
+          path="/auth/signup"
           element={
             <PublicLayout>
               <SignupPage />
             </PublicLayout>
           }
         />
-        <Route
-          path="/signup"
-          element={
-            <PublicLayout>
-              <SignupPage />
-            </PublicLayout>
-          }
-        />
-        <Route
-          path="/admin/login"
-          element={
-            <PublicLayout>
-              <AdminLoginPage />
-            </PublicLayout>
-          }
-        />
-        <Route
-          path="/admin/signin"
-          element={
-            <PublicLayout>
-              <AdminLoginPage />
-            </PublicLayout>
-          }
-        />
+
+        {/* Auth Convenience Aliases */}
+        <Route path="/login" element={<Navigate to="/auth/login" replace />} />
+        <Route path="/signin" element={<Navigate to="/auth/login" replace />} />
+        <Route path="/register" element={<Navigate to="/auth/signup" replace />} />
+        <Route path="/signup" element={<Navigate to="/auth/signup" replace />} />
+        <Route path="/admin/login" element={<Navigate to="/auth/login" replace />} />
+        <Route path="/admin/signin" element={<Navigate to="/auth/login" replace />} />
 
         {/* Public Redirect & Bio Pages */}
         <Route path="/r/:code" element={<RedirectPage />} />
@@ -239,21 +214,37 @@ export default function App() {
           }
         />
 
-        {/* Admin Routes - Rendered within Dedicated AdminLayout */}
-        <Route path="/admin" element={<Navigate to="/admin/overview" replace />} />
+        {/* Dedicated Admin Portal Routes */}
         <Route
-          path="/admin/overview"
+          path="/admin"
           element={
             <AdminLayout>
               <AdminOverviewPage />
             </AdminLayout>
           }
         />
+        <Route path="/admin/overview" element={<Navigate to="/admin" replace />} />
         <Route
           path="/admin/links"
           element={
             <AdminLayout>
               <AdminLinksPage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/security"
+          element={
+            <AdminLayout>
+              <AdminSecurityPage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/activity"
+          element={
+            <AdminLayout>
+              <AdminActivityPage />
             </AdminLayout>
           }
         />
@@ -265,54 +256,14 @@ export default function App() {
             </AdminLayout>
           }
         />
-        <Route
-          path="/admin/abuse"
-          element={
-            <AdminLayout>
-              <AdminAbusePage />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/blocklist"
-          element={
-            <AdminLayout>
-              <AdminBlocklistPage />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/destinations"
-          element={
-            <AdminLayout>
-              <AdminDestinationAlertsPage />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/anomalies"
-          element={
-            <AdminLayout>
-              <AdminAnomaliesPage />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/audit"
-          element={
-            <AdminLayout>
-              <AdminAuditLogPage />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/policies"
-          element={
-            <AdminLayout>
-              <AdminPoliciesPage />
-            </AdminLayout>
-          }
-        />
+
+        {/* Legacy Admin Subroute Redirects to Unified Hubs */}
+        <Route path="/admin/abuse" element={<Navigate to="/admin/security" replace />} />
+        <Route path="/admin/blocklist" element={<Navigate to="/admin/security" replace />} />
+        <Route path="/admin/destinations" element={<Navigate to="/admin/security" replace />} />
+        <Route path="/admin/anomalies" element={<Navigate to="/admin/security" replace />} />
+        <Route path="/admin/audit" element={<Navigate to="/admin/activity" replace />} />
+        <Route path="/admin/policies" element={<Navigate to="/admin/activity" replace />} />
 
         {/* Root Short-Link Redirect & 404 Catch-All */}
         <Route path="/:code" element={<RedirectPage />} />

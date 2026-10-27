@@ -1,6 +1,6 @@
 /**
- * LinkPulse REST API Typed Contracts
- * Strongly-typed request/response models for the future Node.js + SQL REST backend.
+ * Linko REST API Typed Contracts
+ * Strongly-typed request/response models for the future Node.js + Fastify + PostgreSQL backend.
  */
 
 import {

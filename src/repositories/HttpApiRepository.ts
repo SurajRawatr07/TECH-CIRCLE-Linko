@@ -1,5 +1,5 @@
 /**
- * LinkPulse HTTP REST API Repository Adapter
+ * Linko HTTP REST API Repository Adapter
  *
  * Ready-to-connect adapter implementing repository interfaces for a future Node.js + SQL backend.
  *

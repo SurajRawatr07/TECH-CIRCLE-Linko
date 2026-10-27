@@ -73,7 +73,7 @@ export function QrCenterPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `linkpulse-qr-${mode === 'existing' && activeLink ? activeLink.shortCode : 'custom'}.svg`;
+    a.download = `linko-qr-${mode === 'existing' && activeLink ? activeLink.shortCode : 'custom'}.svg`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -100,7 +100,7 @@ export function QrCenterPage() {
         const pngUrl = canvas.toDataURL('image/png');
         const a = document.createElement('a');
         a.href = pngUrl;
-        a.download = `linkpulse-qr-${mode === 'existing' && activeLink ? activeLink.shortCode : 'custom'}.png`;
+        a.download = `linko-qr-${mode === 'existing' && activeLink ? activeLink.shortCode : 'custom'}.png`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

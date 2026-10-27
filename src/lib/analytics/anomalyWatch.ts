@@ -1,5 +1,5 @@
 /**
- * LinkPulse 2.0 — Click Anomaly Watch
+ * Linko — Click Anomaly Watch
  * 
  * Deterministic, rule-based anomaly detection for link click velocity.
  * Analyzes interaction bursts and repeated access patterns entirely on client-side state.

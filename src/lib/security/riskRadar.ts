@@ -1,5 +1,5 @@
 /**
- * LinkPulse 2.0 — Link Risk Radar
+ * Linko — Link Risk Radar
  * Explainable, heuristic URL risk analyzer running 100% in-browser.
  * 
  * NOTICE:

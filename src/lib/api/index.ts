@@ -1,5 +1,5 @@
 /**
- * LinkPulse Frontend API Layer
+ * Linko Frontend API Layer
  * Connects frontend UI to modular client-side service adapters and local persistence.
  */
 

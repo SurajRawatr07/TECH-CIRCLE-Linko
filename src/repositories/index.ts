@@ -1,5 +1,5 @@
 /**
- * LinkPulse Repository Registry & Factory
+ * Linko Repository Registry & Factory
  *
  * Provides single point of access for all data repositories.
  * By default, uses `LocalStorageRepository` for 100% frontend offline execution.

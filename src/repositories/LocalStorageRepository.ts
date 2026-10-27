@@ -1,5 +1,5 @@
 /**
- * LinkPulse LocalStorage Repository Implementation
+ * Linko LocalStorage Repository Implementation
  * Provides high-speed, 100% frontend persistent data storage via browser localStorage
  * implementing the repository contracts.
  */

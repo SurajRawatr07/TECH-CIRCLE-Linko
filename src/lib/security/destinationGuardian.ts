@@ -1,11 +1,11 @@
 /**
- * LinkPulse 2.0 — Destination Change Guardian
+ * Linko — Destination Change Guardian
  * 
  * Tracks and audits changes made to short link destinations inside the application.
  * Protects users and audience from silent redirection hijacking or unintentional destination swaps.
  * 
  * NOTICE:
- * This module monitors changes made within LinkPulse. It does not monitor external server-side
+ * This module monitors changes made within Linko. It does not monitor external server-side
  * HTTP redirects or downstream website modifications occurring independently on target hosts.
  */
 

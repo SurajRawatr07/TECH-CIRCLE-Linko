@@ -80,7 +80,7 @@ export function PublicBioPage() {
             to="/"
             className="pearl-btn-dark inline-block px-4 py-2 text-xs font-semibold rounded-lg transition-colors"
           >
-            Create Your Own on LinkPulse
+            Create Your Own on Linko
           </Link>
         </div>
       </div>
@@ -184,7 +184,7 @@ export function PublicBioPage() {
           <div className="w-4 h-4 rounded bg-neutral-900 flex items-center justify-center text-white">
             <Link2 className="w-2.5 h-2.5" />
           </div>
-          <span>Powered by <strong>LinkPulse</strong></span>
+          <span>Powered by <strong>Linko</strong></span>
         </Link>
       </div>
     </div>

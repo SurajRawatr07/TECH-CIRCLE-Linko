@@ -177,7 +177,7 @@ export function checkRateLimit(key: string, maxRequests = 10, windowMs = 60000):
   resetInSeconds: number;
 } {
   try {
-    const storageKey = `linkpulse_ratelimit_${key}`;
+    const storageKey = `linko_ratelimit_${key}`;
     const raw = localStorage.getItem(storageKey);
     const now = Date.now();
     let timestamps: number[] = raw ? JSON.parse(raw) : [];
@@ -221,6 +221,6 @@ export function getBaseShortUrl(): string {
   }
 
   // Fallback domain
-  return 'https://linkpulse2026.vercel.app';
+  return 'https://linko.vercel.app';
 }
 

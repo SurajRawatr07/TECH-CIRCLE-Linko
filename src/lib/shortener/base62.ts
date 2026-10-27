@@ -1,5 +1,5 @@
 /**
- * LinkPulse 2.0 — Base62 Shortening Engine
+ * Linko — Base62 Shortening Engine
  * 
  * Standard Base62 Alphabet (62 alphanumeric characters):
  * 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
@@ -180,4 +180,11 @@ export function validateCustomAlias(alias: string, existingCodes: string[] = [])
   }
 
   return { valid: true };
+}
+
+/**
+ * Normalizes custom alias by trimming whitespace and slashes.
+ */
+export function normalizeCustomAlias(alias: string): string {
+  return alias.trim().replace(/^\/+/, '').replace(/\/+$/, '');
 }

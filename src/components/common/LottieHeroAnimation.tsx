@@ -110,7 +110,7 @@ export function LottieHeroAnimation({ className = '' }: LottieHeroAnimationProps
     <div
       className={`relative w-full flex items-center justify-center select-none ${className}`}
       role="img"
-      aria-label="LinkPulse Real-Time URL Routing and Analytics Lottie Animation"
+      aria-label="Linko Real-Time URL Routing and Analytics Lottie Animation"
     >
       {/* Fluid responsive wrapper: strictly within viewport on 320px up to 1440px desktop */}
       <div className="relative w-full max-w-[280px] min-[360px]:max-w-[320px] sm:max-w-[380px] md:max-w-[440px] lg:max-w-[480px] aspect-square flex items-center justify-center">

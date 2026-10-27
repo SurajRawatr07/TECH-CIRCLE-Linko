@@ -27,7 +27,7 @@ export const policyLabService = {
         originalUrl: 'https://example.com/target',
         shortCode: 'sim',
         title: 'Simulated Link',
-        domain: 'linkpulse.io',
+        domain: 'linko.io',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         isActive: payload.simulatedIsActive !== false,

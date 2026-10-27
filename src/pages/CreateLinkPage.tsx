@@ -619,7 +619,7 @@ export function CreateLinkPage() {
             <div className="p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded-lg border border-slate-200 dark:border-slate-800 text-xs space-y-1">
               <p className="font-semibold text-slate-800 dark:text-slate-200">Review Summary:</p>
               <p className="text-slate-600 dark:text-slate-400 font-mono">
-                linkpulse.io/r/{shortCode} &rarr; {originalUrl}
+                linko.io/r/{shortCode} &rarr; {originalUrl}
               </p>
             </div>
           </Card>
@@ -693,7 +693,7 @@ export function CreateLinkPage() {
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(img, 32, 32, 448, 448);
                     const a = document.createElement('a');
-                    a.download = `linkpulse-qr-${createdLink.shortCode}.png`;
+                    a.download = `linko-qr-${createdLink.shortCode}.png`;
                     a.href = canvas.toDataURL('image/png');
                     a.click();
                     success('QR code downloaded as PNG');

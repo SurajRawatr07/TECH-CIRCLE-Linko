@@ -285,7 +285,7 @@ class MockDb {
       throw new Error(`The alias "${data.shortCode}" is already in use.`);
     }
 
-    let domain = 'linkpulse.io';
+    let domain = 'linko.io';
     try {
       domain = new URL(data.originalUrl).hostname;
     } catch {}
@@ -776,7 +776,7 @@ class MockDb {
       targetUrl: 'https://github.com/facebook/react',
       reason: 'Automated safety verification check on developer link.',
       reporterIp: '192.168.1.1',
-      reporterEmail: 'security-bot@linkpulse.io',
+      reporterEmail: 'security-bot@linko.io',
       reportedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
       status: 'pending',
     },
@@ -788,7 +788,7 @@ class MockDb {
       targetUrl: 'https://phishing-vault.net/claim',
       reason: 'Suspicious credential form detected by threat scanner.',
       reporterIp: '192.168.1.42',
-      reporterEmail: 'threat-feed@linkpulse.io',
+      reporterEmail: 'threat-feed@linko.io',
       reportedAt: new Date(Date.now() - 86400000 * 4).toISOString(),
       status: 'pending',
     },
@@ -873,7 +873,7 @@ class MockDb {
         id: `bio_${Date.now()}`,
         userId,
         slug,
-        title: user?.name || 'My LinkPulse Bio',
+        title: user?.name || 'My Linko Bio',
         bio: 'Product builder, tech enthusiast & writer. Welcome to my curated links!',
         avatarUrl: user?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80',
         theme: 'pearl',

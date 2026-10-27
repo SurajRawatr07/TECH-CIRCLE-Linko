@@ -12,13 +12,15 @@ import {
   ExternalLink,
   ShieldAlert,
   ArrowRight,
-  Sparkles,
+  Shield,
   Info,
-  Clock,
+  Calendar,
+  MousePointer,
+  Sparkles,
   RefreshCw,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { validateDestinationUrl, generateBase62Code } from '../lib/shortener/base62';
+import { validateDestinationUrl, generateBase62Code, normalizeCustomAlias } from '../lib/shortener/base62';
 import { analyzeUrlRisk, RiskReport } from '../lib/security/riskRadar';
 import { getBaseShortUrl } from '../lib/utils';
 import { Card } from '../components/ui/Card';
@@ -26,40 +28,38 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { useToastStore } from '../store/useToastStore';
 import { LocalStore } from '../lib/api/localStore';
-
-const GUEST_STORAGE_KEY = 'lp_guest_creations';
-const HOURLY_LIMIT = 3;
-const WINDOW_MS = 60 * 60 * 1000; // 1 hour
-
-interface GuestShortenedLink {
-  id: string;
-  originalUrl: string;
-  shortCode: string;
-  fullShortUrl: string;
-  createdAt: string;
-  riskReport: RiskReport;
-}
+import { Link as LinkType } from '../types';
 
 export function GuestPage() {
   const [searchParams] = useSearchParams();
   const { success, error: toastError } = useToastStore();
 
   const [inputUrl, setInputUrl] = useState(searchParams.get('url') || '');
+  const [customAlias, setCustomAlias] = useState('');
+  const [aliasError, setAliasError] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState('');
+  const [clickLimit, setClickLimit] = useState('');
+
   const [urlValidation, setUrlValidation] = useState<{ valid: boolean; error?: string }>({ valid: false });
   const [liveRisk, setLiveRisk] = useState<RiskReport | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [createdLinks, setCreatedLinks] = useState<GuestShortenedLink[]>([]);
+  const [recentLinks, setRecentLinks] = useState<LinkType[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const [activeQrModal, setActiveQrModal] = useState<GuestShortenedLink | null>(null);
-  const [hourlyUsage, setHourlyUsage] = useState<number>(0);
+  const [activeQrLink, setActiveQrLink] = useState<{ code: string; fullUrl: string } | null>(null);
   const qrRef = useRef<SVGSVGElement | null>(null);
 
-  // Load guest rate limit usage
+  // Load recent links from LocalStore on mount
   useEffect(() => {
-    refreshUsage();
+    loadRecentLinks();
   }, []);
 
-  // Live URL validation and risk preview
+  function loadRecentLinks() {
+    const all = LocalStore.getLinks();
+    setRecentLinks(all.slice(0, 10));
+  }
+
+  // Live URL validation and heuristic risk preview
   useEffect(() => {
     if (!inputUrl.trim()) {
       setUrlValidation({ valid: false });
@@ -78,92 +78,112 @@ export function GuestPage() {
     }
   }, [inputUrl]);
 
-  function getGuestTimestamps(): number[] {
-    try {
-      const raw = localStorage.getItem(GUEST_STORAGE_KEY);
-      if (!raw) return [];
-      const parsed: number[] = JSON.parse(raw);
-      const now = Date.now();
-      return parsed.filter((t) => now - t < WINDOW_MS);
-    } catch {
-      return [];
-    }
-  }
+  // Check alias availability live
+  function handleAliasChange(val: string) {
+    setCustomAlias(val);
+    setAliasError(null);
 
-  function refreshUsage() {
-    const validTimestamps = getGuestTimestamps();
-    setHourlyUsage(validTimestamps.length);
+    const clean = normalizeCustomAlias(val);
+    if (!clean) return;
+
+    if (clean.length < 3) {
+      setAliasError('Alias must be at least 3 characters long');
+      return;
+    }
+
+    const existing = LocalStore.getLinks();
+    const isTaken = existing.some((l) => l.shortCode.toLowerCase() === clean.toLowerCase());
+    if (isTaken) {
+      setAliasError(`The alias "${clean}" is already in use. Please pick another code.`);
+    }
   }
 
   function handleShorten(e: React.FormEvent) {
     e.preventDefault();
-
-    const validTimestamps = getGuestTimestamps();
-    if (validTimestamps.length >= HOURLY_LIMIT) {
-      toastError(`Guest quota limit reached (${HOURLY_LIMIT}/hour). Create a free account for unlimited shortening.`);
-      return;
-    }
+    setAliasError(null);
 
     const valResult = validateDestinationUrl(inputUrl);
     if (!valResult.valid || !valResult.normalizedUrl) {
-      toastError(valResult.error || 'Please enter a valid HTTP/HTTPS URL');
+      toastError('Validation Failed', valResult.error || 'Please enter a valid HTTP or HTTPS destination');
       return;
     }
 
-    // Generate unique Base62 short code
     const existingLinks = LocalStore.getLinks();
-    const existingCodes = existingLinks.map((l) => l.shortCode);
-    const shortCode = generateBase62Code(existingCodes, 6);
+    let shortCode = '';
 
-    const fullShortUrl = `${getBaseShortUrl()}/r/${shortCode}`;
-    const riskReport = analyzeUrlRisk(valResult.normalizedUrl);
+    if (customAlias.trim()) {
+      const cleanAlias = normalizeCustomAlias(customAlias);
+      if (cleanAlias.length < 3) {
+        setAliasError('Alias must be at least 3 characters long');
+        return;
+      }
+      const isTaken = existingLinks.some((l) => l.shortCode.toLowerCase() === cleanAlias.toLowerCase());
+      if (isTaken) {
+        setAliasError(`The custom alias "${cleanAlias}" is already taken. Please choose a different alias.`);
+        toastError('Duplicate Alias', `"${cleanAlias}" is already in use.`);
+        return;
+      }
+      shortCode = cleanAlias;
+    } else {
+      const existingCodes = existingLinks.map((l) => l.shortCode);
+      shortCode = generateBase62Code(existingCodes, 6);
+    }
 
-    // Save to local link registry so in-app simulator can resolve it
-    LocalStore.createLink({
-      id: 'gst_' + Date.now().toString(36),
-      userId: 'guest_session',
-      originalUrl: valResult.normalizedUrl,
-      shortCode,
-      title: `Guest Link: ${valResult.parsedUrl?.hostname || 'Destination'}`,
-      domain: valResult.parsedUrl?.hostname || 'unknown',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      isActive: true,
-      tags: ['guest'],
-      clicksCount: 0,
-      uniqueClicksCount: 0,
-      qrScansCount: 0,
-      rules: {},
-    });
+    setIsSubmitting(true);
 
-    // Record guest creation timestamp
-    const now = Date.now();
-    const updatedTimestamps = [...validTimestamps, now];
-    localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(updatedTimestamps));
-    setHourlyUsage(updatedTimestamps.length);
+    try {
+      // Build rules
+      const rules: any = {};
+      if (expiresAt) {
+        rules.expiresAt = new Date(expiresAt).toISOString();
+      }
+      if (clickLimit && parseInt(clickLimit, 10) > 0) {
+        rules.clickLimit = parseInt(clickLimit, 10);
+      }
 
-    const newGuestLink: GuestShortenedLink = {
-      id: 'gst_' + Date.now().toString(36),
-      originalUrl: valResult.normalizedUrl,
-      shortCode,
-      fullShortUrl,
-      createdAt: new Date().toISOString(),
-      riskReport,
-    };
+      // Save to local storage
+      const newLink: LinkType = {
+        id: 'gst_' + Date.now().toString(36),
+        userId: 'guest_session',
+        originalUrl: valResult.normalizedUrl,
+        shortCode,
+        title: `Guest Link: ${valResult.parsedUrl?.hostname || 'Destination'}`,
+        domain: valResult.parsedUrl?.hostname || 'unknown',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isActive: true,
+        tags: ['guest'],
+        clicksCount: 0,
+        uniqueClicksCount: 0,
+        qrScansCount: 0,
+        rules,
+      };
 
-    setCreatedLinks((prev) => [newGuestLink, ...prev]);
-    setInputUrl('');
-    success(`Short code "${shortCode}" generated successfully!`);
+      LocalStore.createLink(newLink);
+      loadRecentLinks();
+
+      setInputUrl('');
+      setCustomAlias('');
+      setExpiresAt('');
+      setClickLimit('');
+
+      success(`Short link created: /r/${shortCode}`);
+    } catch (err: any) {
+      toastError('Creation Failed', err.message || 'Unable to save link.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  function handleCopy(text: string, code: string) {
-    navigator.clipboard.writeText(text);
-    setCopiedCode(code);
+  function handleCopy(shortCode: string) {
+    const fullUrl = `${getBaseShortUrl()}/r/${shortCode}`;
+    navigator.clipboard.writeText(fullUrl);
+    setCopiedCode(shortCode);
     success('Copied short link to clipboard');
     setTimeout(() => setCopiedCode(null), 2000);
   }
 
-  function handleDownloadQr(link: GuestShortenedLink) {
+  function downloadQrPng(shortCode: string) {
     const svg = qrRef.current;
     if (!svg) return;
 
@@ -181,104 +201,156 @@ export function GuestPage() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 32, 32, 448, 448);
         const pngFile = canvas.toDataURL('image/png');
-        const downloadLink = document.createElement('a');
-        downloadLink.download = `linkpulse-qr-${link.shortCode}.png`;
-        downloadLink.href = pngFile;
-        downloadLink.click();
-        success('QR code downloaded as PNG');
+        const dl = document.createElement('a');
+        dl.download = `linko-qr-${shortCode}.png`;
+        dl.href = pngFile;
+        dl.click();
+        success('QR Code downloaded as PNG');
       }
     };
 
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   }
 
-  const remainingQuota = Math.max(0, HOURLY_LIMIT - hourlyUsage);
+  function downloadQrSvg(shortCode: string) {
+    const svg = qrRef.current;
+    if (!svg) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const dl = document.createElement('a');
+    dl.download = `linko-qr-${shortCode}.svg`;
+    dl.href = url;
+    dl.click();
+    URL.revokeObjectURL(url);
+    success('QR Code downloaded as SVG');
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8">
       {/* Header */}
       <div className="space-y-3 text-center sm:text-left">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200">
-          <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-          <span>Guest Shortener Portal · No Account Required</span>
+          <Sparkles className="w-3.5 h-3.5 text-neutral-900 dark:text-white" />
+          <span>Guest Shortener · No Sign Up Required</span>
         </div>
-        <h1 className="font-display text-2xl sm:text-4xl font-bold tracking-tight text-neutral-900 dark:text-white">
-          Shorten Links Fast & Anonymously
+        <h1 className="font-display text-3xl sm:text-4xl font-normal tracking-tight text-neutral-900 dark:text-white">
+          Shorten Links Anonymously
         </h1>
-        <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl">
-          Instantly transform any long destination into a Base62 short URL and downloadable QR code.
-          Evaluated in real-time with Link Risk Radar.
+        <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl font-body">
+          Turn long destination URLs into clean Base62 short links, customize optional aliases,
+          configure expiration or click limits, and inspect safety heuristics in real time.
         </p>
       </div>
 
-      {/* Guest Quota Bar & Limitation Disclaimer */}
-      <Card className="p-4 bg-slate-50/80 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 space-y-2">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 font-medium text-slate-800 dark:text-slate-200">
-            <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-            <span>
-              Guest Hourly Allowance: <strong className="font-mono">{hourlyUsage}/{HOURLY_LIMIT}</strong> links created
+      {/* Honest Local Demo Disclosure Banner */}
+      <Card className="p-4 bg-neutral-50 dark:bg-neutral-900/60 border-neutral-200 dark:border-neutral-800 space-y-2">
+        <div className="flex items-start gap-2.5 text-xs text-neutral-700 dark:text-neutral-300">
+          <Info className="w-4 h-4 text-neutral-900 dark:text-neutral-100 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <span className="font-semibold text-neutral-900 dark:text-white">
+              Local Demonstration Notice:
             </span>
-            <Badge variant={remainingQuota > 0 ? 'success' : 'danger'} size="sm">
-              {remainingQuota > 0 ? `${remainingQuota} remaining` : 'Quota Reached'}
-            </Badge>
+            <p className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-400">
+              In this frontend deployment without an active backend API, generated short links are stored in your browser's local demo storage.
+              They resolve within this browser session and cannot be assumed to resolve on external devices until the Fastify + PostgreSQL backend is connected.
+            </p>
           </div>
-          <Link
-            to="/signup"
-            className="inline-flex items-center gap-1.5 font-semibold text-teal-700 dark:text-teal-300 hover:underline"
-          >
-            <span>Create free account for unlimited links</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
         </div>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-          <strong>Architecture notice:</strong> In this frontend-only phase, guest limits are enforced locally in browser storage.
-          Browser-only limits can be bypassed by clearing browser cookies/site data. To preserve a persistent link dashboard,
-          custom aliases, and click analytics across sessions, sign up for a free account.
-        </p>
       </Card>
 
-      {/* Shorten Form */}
-      <Card className="p-6 sm:p-8 space-y-6 border-neutral-300 dark:border-neutral-800 shadow-sm">
-        <form onSubmit={handleShorten} className="space-y-4">
-          <label className="block text-sm font-semibold text-neutral-900 dark:text-white">
-            Destination URL
-          </label>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
+      {/* Main Shortening Card */}
+      <Card className="p-6 sm:p-8 space-y-6 border-neutral-300 dark:border-neutral-800 shadow-xs">
+        <form onSubmit={handleShorten} className="space-y-5">
+          {/* Destination URL */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-neutral-900 dark:text-white uppercase tracking-wider">
+              Destination URL (HTTP / HTTPS)
+            </label>
+            <div className="relative">
               <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">
                 <Link2 className="w-4.5 h-4.5" />
               </div>
               <input
-                type="text"
+                type="url"
+                required
                 value={inputUrl}
                 onChange={(e) => setInputUrl(e.target.value)}
-                placeholder="https://example.com/very/long/target/address..."
-                className="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/20 dark:focus:ring-white/20"
-                disabled={remainingQuota === 0}
+                placeholder="https://example.com/long/web/address..."
+                className="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/20 dark:focus:ring-white/20 transition-all"
               />
             </div>
-            <Button
-              type="submit"
-              disabled={!urlValidation.valid || remainingQuota === 0}
-              className="py-3 px-6 text-sm font-semibold whitespace-nowrap bg-neutral-900 text-white hover:bg-black dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
-            >
-              Shorten URL
-            </Button>
+            {inputUrl.trim() && !urlValidation.valid && (
+              <p className="text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1.5 font-medium pt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{urlValidation.error}</span>
+              </p>
+            )}
           </div>
 
-          {/* Validation Error */}
-          {inputUrl.trim() && !urlValidation.valid && (
-            <p className="text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1.5 font-medium">
-              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-              <span>{urlValidation.error}</span>
-            </p>
-          )}
+          {/* Optional Configurations: Alias, Expiry, Click Limit */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+            {/* Custom Alias */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                Custom Alias <span className="text-neutral-400 font-normal">(optional)</span>
+              </label>
+              <div className="flex rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden focus-within:ring-2 focus-within:ring-neutral-900/20 dark:focus-within:ring-white/20">
+                <span className="px-2.5 py-2.5 text-xs text-neutral-400 bg-neutral-50 dark:bg-neutral-800 border-r border-neutral-200 dark:border-neutral-700 font-mono select-none">
+                  /r/
+                </span>
+                <input
+                  type="text"
+                  value={customAlias}
+                  onChange={(e) => handleAliasChange(e.target.value)}
+                  placeholder="my-link"
+                  className="w-full px-3 py-2 text-xs font-mono text-neutral-900 dark:text-white bg-transparent focus:outline-none"
+                />
+              </div>
+              {aliasError && (
+                <p className="text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1 font-medium">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{aliasError}</span>
+                </p>
+              )}
+            </div>
 
-          {/* Live Link Risk Radar Verdict */}
+            {/* Expiration Date */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-neutral-400" />
+                <span>Expiration <span className="text-neutral-400 font-normal">(optional)</span></span>
+              </label>
+              <input
+                type="datetime-local"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-neutral-900/20 dark:focus:ring-white/20"
+              />
+            </div>
+
+            {/* Click Quota Limit */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1">
+                <MousePointer className="w-3.5 h-3.5 text-neutral-400" />
+                <span>Click Limit <span className="text-neutral-400 font-normal">(optional)</span></span>
+              </label>
+              <input
+                type="number"
+                min="1"
+                placeholder="e.g. 100"
+                value={clickLimit}
+                onChange={(e) => setClickLimit(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-neutral-900/20 dark:focus:ring-white/20"
+              />
+            </div>
+          </div>
+
+          {/* Real-time Link Risk Radar Verdict */}
           {liveRisk && (
             <div
-              className={`p-3.5 rounded-xl border text-xs space-y-2 ${
+              className={`p-4 rounded-xl border text-xs space-y-2 ${
                 liveRisk.level === 'high'
                   ? 'bg-rose-50 border-rose-200 text-rose-900 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-200'
                   : liveRisk.level === 'caution'
@@ -296,16 +368,16 @@ export function GuestPage() {
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   )}
                   <span>
-                    Link Risk Radar Verdict: {liveRisk.level.toUpperCase()} RISK (Safety Score: {100 - liveRisk.score}/100)
+                    Link Risk Radar: {liveRisk.level.toUpperCase()} RISK (Safety Score: {100 - liveRisk.score}/100)
                   </span>
                 </div>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-black/5 dark:bg-white/10">
-                  Heuristic Check
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-black/5 dark:bg-white/10 font-bold">
+                  Heuristic Analysis
                 </span>
               </div>
 
               {liveRisk.indicators.length > 0 ? (
-                <ul className="space-y-1 list-disc list-inside text-[11px] opacity-90">
+                <ul className="space-y-1 list-disc list-inside text-[11px] opacity-90 pl-1">
                   {liveRisk.indicators.map((ind, i) => (
                     <li key={i}>
                       <strong>{ind.title}:</strong> {ind.explanation}
@@ -314,185 +386,168 @@ export function GuestPage() {
                 </ul>
               ) : (
                 <p className="text-[11px] opacity-90">
-                  Destination uses standard secure HTTPS with clean structural parameters.
+                  Standard secure HTTPS destination with no heuristic risk flags detected.
                 </p>
               )}
             </div>
           )}
+
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            isLoading={isSubmitting}
+            disabled={!urlValidation.valid || Boolean(aliasError)}
+            className="w-full min-h-[46px] font-semibold"
+          >
+            <span>Generate Short Link</span>
+            <ArrowRight className="w-4 h-4 ml-1.5" />
+          </Button>
         </form>
       </Card>
 
-      {/* Guest Generated Results */}
-      {createdLinks.length > 0 && (
+      {/* Recent Locally Stored Links */}
+      {recentLinks.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-neutral-900 dark:text-white">
-              Generated Guest Links (This Session)
+            <h2 className="text-base font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+              <Link2 className="w-4 h-4" />
+              <span>Recent Links in Local Storage</span>
             </h2>
             <span className="text-xs text-neutral-500">
-              {createdLinks.length} {createdLinks.length === 1 ? 'link' : 'links'}
+              {recentLinks.length} {recentLinks.length === 1 ? 'link' : 'links'} saved
             </span>
           </div>
 
           <div className="space-y-3">
-            {createdLinks.map((link) => (
-              <Card key={link.id} className="p-4 sm:p-5 space-y-3 border-neutral-200 dark:border-neutral-800">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-base font-bold text-neutral-900 dark:text-white">
-                        /r/{link.shortCode}
-                      </span>
-                      <Badge
-                        variant={
-                          link.riskReport.level === 'high'
-                            ? 'danger'
-                            : link.riskReport.level === 'caution'
-                            ? 'warning'
-                            : 'success'
-                        }
-                        size="sm"
-                      >
-                        {link.riskReport.level} risk
-                      </Badge>
-                      <span className="text-[10px] text-neutral-400 font-mono">
-                        Base62 Generated
-                      </span>
+            {recentLinks.map((link) => {
+              const fullUrl = `${getBaseShortUrl()}/r/${link.shortCode}`;
+              return (
+                <Card key={link.id} className="p-4 sm:p-5 space-y-3 border-neutral-200 dark:border-neutral-800">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-base font-bold text-neutral-900 dark:text-white">
+                          /r/{link.shortCode}
+                        </span>
+                        <Badge variant={link.isActive ? 'success' : 'danger'} size="sm">
+                          {link.isActive ? 'Active' : 'Paused'}
+                        </Badge>
+                        {link.rules?.expiresAt && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-mono">
+                            Expires {new Date(link.rules.expiresAt).toLocaleDateString()}
+                          </span>
+                        )}
+                        {link.rules?.clickLimit && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-mono">
+                            Limit: {link.rules.clickLimit}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate max-w-lg font-mono">
+                        {link.originalUrl}
+                      </p>
                     </div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate max-w-lg font-mono">
-                      {link.originalUrl}
-                    </p>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCopy(link.shortCode)}
+                        className="gap-1.5 text-xs min-h-[36px]"
+                      >
+                        {copiedCode === link.shortCode ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setActiveQrLink({ code: link.shortCode, fullUrl })}
+                        className="gap-1.5 text-xs min-h-[36px]"
+                      >
+                        <QrCode className="w-3.5 h-3.5" />
+                        <span>QR</span>
+                      </Button>
+
+                      <Link
+                        to={`/r/${link.shortCode}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-medium text-neutral-800 dark:text-neutral-200 transition-colors"
+                        title="Open local redirect simulation"
+                      >
+                        <span>Simulate</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCopy(link.fullShortUrl, link.shortCode)}
-                      className="gap-1.5 text-xs"
-                    >
-                      {copiedCode === link.shortCode ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Copy Link</span>
-                        </>
-                      )}
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setActiveQrModal(link)}
-                      className="gap-1.5 text-xs"
-                    >
-                      <QrCode className="w-3.5 h-3.5" />
-                      <span>QR Code</span>
-                    </Button>
-
-                    <Link
-                      to={`/r/${link.shortCode}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-medium text-neutral-800 dark:text-neutral-200 transition-colors"
-                      title="Test in-app redirect simulator"
-                    >
-                      <span>Simulate</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Redirect Outcome Preview */}
-                <div className="p-2.5 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-neutral-400">Redirects to:</span>
-                    <a
-                      href={link.originalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-neutral-800 dark:text-neutral-200 hover:underline truncate max-w-sm"
-                    >
-                      {link.originalUrl}
-                    </a>
-                  </div>
-                  <span className="text-[11px] text-neutral-500">
-                    Resolves locally in this browser
-                  </span>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* QR Modal for Guest */}
-      {activeQrModal && (
+      {/* QR Code Modal for Guest */}
+      {activeQrLink && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <Card className="max-w-sm w-full p-6 text-center space-y-4">
             <h3 className="text-base font-bold text-neutral-900 dark:text-white">
-              QR Code: /r/{activeQrModal.shortCode}
+              QR Code: /r/{activeQrLink.code}
             </h3>
             <p className="text-xs text-neutral-500">
-              Scan with camera or download high-resolution PNG asset.
+              Download high-resolution image asset for print or digital sharing.
             </p>
             <div className="p-4 bg-white rounded-xl inline-block mx-auto border border-neutral-200 shadow-xs">
               <QRCodeSVG
                 ref={qrRef}
-                value={activeQrModal.fullShortUrl}
+                value={activeQrLink.fullUrl}
                 size={200}
                 level="H"
                 fgColor="#171717"
                 bgColor="#ffffff"
               />
             </div>
-            <div className="flex items-center justify-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setActiveQrModal(null)}
+                onClick={() => setActiveQrLink(null)}
               >
                 Close
               </Button>
               <Button
+                variant="outline"
                 size="sm"
-                onClick={() => handleDownloadQr(activeQrModal)}
-                className="gap-1.5 bg-neutral-900 text-white hover:bg-black dark:bg-white dark:text-neutral-900"
+                onClick={() => downloadQrSvg(activeQrLink.code)}
+                className="gap-1.5 text-xs"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>Download PNG</span>
+                <span>SVG</span>
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => downloadQrPng(activeQrLink.code)}
+                className="gap-1.5 text-xs bg-neutral-900 text-white hover:bg-black dark:bg-white dark:text-neutral-900"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>PNG (512px)</span>
               </Button>
             </div>
           </Card>
         </div>
       )}
-
-      {/* Conversion Banner */}
-      <Card className="p-6 bg-linear-to-r from-slate-900 to-neutral-900 text-white space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <h3 className="font-display text-lg font-bold">
-              Want Custom Aliases, Analytics & Unlimited Links?
-            </h3>
-            <p className="text-xs text-neutral-300 max-w-xl">
-              Create a free account to unlock your personal management dashboard, custom aliases,
-              password protection, expiration dates, tags, campaigns, and CSV bulk import.
-            </p>
-          </div>
-          <Link
-            to="/signup"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-semibold text-sm transition-colors shrink-0"
-          >
-            <span>Create Free Account</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </Card>
     </div>
   );
 }

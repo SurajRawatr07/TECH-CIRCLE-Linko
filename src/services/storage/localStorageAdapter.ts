@@ -1,5 +1,5 @@
 /**
- * LinkPulse Client Storage Adapter
+ * Linko Client Storage Adapter
  * Centralized, safe wrapper around window.localStorage with error handling and serialization.
  */
 
@@ -38,13 +38,13 @@ export const storageAdapter = {
     }
   },
 
-  clearAllLinkPulseKeys(): void {
+  clearAllLinkoKeys(): void {
     if (typeof window === 'undefined') return;
     try {
       const keysToRemove: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (k && (k.startsWith(STORAGE_PREFIX) || k.startsWith('linkpulse_'))) {
+        if (k && (k.startsWith(STORAGE_PREFIX) || k.startsWith('linkpulse_') || k.startsWith('linko_'))) {
           keysToRemove.push(k);
         }
       }
@@ -52,5 +52,9 @@ export const storageAdapter = {
     } catch (err) {
       console.warn('[storageAdapter] Failed to clear keys:', err);
     }
+  },
+
+  clearAllLinkPulseKeys(): void {
+    this.clearAllLinkoKeys();
   },
 };

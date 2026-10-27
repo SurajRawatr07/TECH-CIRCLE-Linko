@@ -1,5 +1,5 @@
 /**
- * LinkPulse Repository Contracts
+ * Linko Repository Contracts
  * Clean interface boundaries decoupling UI views from concrete persistence adapters (localStorage vs REST API).
  */
 

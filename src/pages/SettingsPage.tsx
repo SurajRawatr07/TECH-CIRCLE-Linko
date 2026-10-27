@@ -84,12 +84,13 @@ export function SettingsPage() {
       lp_anomaly_alerts: { name: 'Traffic Anomalies', description: 'Click velocity burst and rapid replay alerts' },
       lp_audit_events: { name: 'Audit Events', description: 'Administrative actions and security incident logs' },
       lp_system_policies: { name: 'System Policies', description: 'Governance configuration and rate limits' },
-      linkpulse_theme: { name: 'Theme Mode', description: 'Light or Dark mode UI preference' },
+      linko_theme: { name: 'Theme Mode', description: 'Light or Dark mode UI preference' },
+      linkpulse_theme: { name: 'Theme Mode', description: 'Legacy Light or Dark mode UI preference' },
     };
 
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (key.startsWith('lp_') || key.startsWith('linkpulse_'))) {
+      if (key && (key.startsWith('lp_') || key.startsWith('linkpulse_') || key.startsWith('linko_'))) {
         const value = localStorage.getItem(key) || '';
         const sizeBytes = new Blob([key + value]).size;
         totalBytes += sizeBytes;
@@ -102,7 +103,7 @@ export function SettingsPage() {
 
         const meta = knownKeys[key] || {
           name: key,
-          description: 'LinkPulse configuration state',
+          description: 'Linko configuration state',
         };
 
         inspected.push({
@@ -172,7 +173,7 @@ export function SettingsPage() {
     const backup: Record<string, any> = {};
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && (k.startsWith('lp_') || k.startsWith('linkpulse_'))) {
+      if (k && (k.startsWith('lp_') || k.startsWith('linkpulse_') || k.startsWith('linko_'))) {
         try {
           backup[k] = JSON.parse(localStorage.getItem(k) || '');
         } catch {
@@ -184,14 +185,19 @@ export function SettingsPage() {
     const jsonString = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backup, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', jsonString);
-    downloadAnchor.setAttribute('download', `linkpulse-local-data-${new Date().toISOString().slice(0, 10)}.json`);
+    downloadAnchor.setAttribute('download', `linko-local-data-${new Date().toISOString().slice(0, 10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
     success('Local data exported as JSON');
   }
 
-  if (!user) return null;
+  const activeUser = user || {
+    id: 'local_workspace_user',
+    name: 'Local Workspace User',
+    email: 'local@workspace.storage',
+    role: 'user' as const,
+  };
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -213,8 +219,8 @@ export function SettingsPage() {
 
         <form onSubmit={handleSaveProfile} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="Full Name" value={user.name} disabled />
-            <Input label="Email Address" value={user.email} disabled />
+            <Input label="Full Name" value={activeUser.name} disabled />
+            <Input label="Email Address" value={activeUser.email} disabled />
           </div>
 
           <Input

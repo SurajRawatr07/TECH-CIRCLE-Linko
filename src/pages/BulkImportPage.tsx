@@ -61,7 +61,7 @@ export function BulkImportPage() {
     const encoded = encodeURI(csvContent);
     const link = document.createElement('a');
     link.href = encoded;
-    link.download = 'linkpulse_import_template.csv';
+    link.download = 'linko_import_template.csv';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -205,7 +205,7 @@ export function BulkImportPage() {
     const encoded = encodeURI(csvContent);
     const link = document.createElement('a');
     link.href = encoded;
-    link.download = 'linkpulse_import_errors.csv';
+    link.download = 'linko_import_errors.csv';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

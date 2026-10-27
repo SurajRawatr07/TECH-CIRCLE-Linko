@@ -177,7 +177,7 @@ export function BioBuilderPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Public Slug (linkpulse.io/bio/...)"
+                label="Public Slug (linko.bio/...)"
                 value={bioPage.slug}
                 onChange={(e) =>
                   setBioPage({
@@ -364,7 +364,7 @@ export function BioBuilderPage() {
                 </div>
 
                 <div className="pt-4 text-[9px] opacity-40">
-                  Powered by LinkPulse
+                  Powered by Linko
                 </div>
               </div>
             </div>

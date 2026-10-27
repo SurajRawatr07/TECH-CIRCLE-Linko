@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Link2,
   BarChart3,
@@ -22,6 +22,7 @@ import {
   Sliders,
   Clock,
   ShieldAlert,
+  Info,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useThemeStore } from '../../store/useThemeStore';
@@ -29,6 +30,7 @@ import { ToastContainer } from '../ui/ToastContainer';
 import { Drawer } from '../ui/Drawer';
 import { Badge } from '../ui/Badge';
 import { cn } from '../../lib/utils';
+import { API_CONFIG } from '../../config/api';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout, isLoading } = useAuthStore();
@@ -37,28 +39,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
-  // Authentication & role guards
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#faf9f6] dark:bg-neutral-950">
-        <div className="w-8 h-8 border-2 border-neutral-900 dark:border-white border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    if (location.pathname.startsWith('/admin')) {
-      return <Navigate to="/admin/login" replace state={{ from: location.pathname }} />;
-    }
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  }
-
-  const isAdminSection = location.pathname.startsWith('/admin');
-
-  // Strict Admin route guard: regular users cannot access Admin routes
-  if (isAdminSection && user.role !== 'admin') {
-    return <Navigate to="/app/dashboard" replace />;
-  }
+  // In local mode without a backend, provide seamless access via a Local Workspace session
+  const isBackendConnected = API_CONFIG.isBackendConnected;
+  const activeUser = user || {
+    id: 'local_workspace_user',
+    name: 'Local Workspace',
+    email: 'local@browser.storage',
+    role: 'user' as const,
+  };
 
   const userNav = [
     { label: 'Overview', path: '/app/dashboard', icon: BarChart3 },
@@ -75,48 +63,34 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { label: 'Workspace Settings', path: '/app/settings', icon: Settings },
   ];
 
-  const adminNav = [
-    { label: 'Platform Overview', path: '/admin/overview', icon: BarChart3 },
-    { label: 'Global Links Directory', path: '/admin/links', icon: LinkIcon },
-    { label: 'User Directory', path: '/admin/users', icon: Users },
-    { label: 'Abuse Moderation Queue', path: '/admin/abuse', icon: ShieldAlert },
-    { label: 'Domain Blocklist', path: '/admin/blocklist', icon: Ban },
-    { label: 'Platform Settings', path: '/app/settings', icon: Settings },
-  ];
-
-  const activeNavList = isAdminSection ? adminNav : userNav;
-
   const currentLabel =
-    activeNavList.find(
+    userNav.find(
       (i) =>
         location.pathname === i.path ||
         (i.path !== '/app/links' && i.path !== '/app/dashboard' && location.pathname.startsWith(i.path))
-    )?.label || (isAdminSection ? 'Platform Administration' : 'Workspace');
+    )?.label || 'Workspace';
 
   const NavContent = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-[#faf9f6] dark:bg-neutral-900/90 text-neutral-900 dark:text-neutral-100">
       {/* Brand Header */}
       <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className={cn(
-            "w-7 h-7 rounded-xl text-white flex items-center justify-center shadow-xs transition-colors",
-            isAdminSection ? "bg-amber-600 dark:bg-amber-500" : "bg-neutral-900 group-hover:bg-black"
-          )}>
-            {isAdminSection ? <Shield className="w-4 h-4 stroke-[2.2]" /> : <Link2 className="w-4 h-4 stroke-[2.2]" />}
+        <Link to="/" className="flex items-center gap-2.5 group" aria-label="Linko Home">
+          <div className="w-8 h-8 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center shadow-xs transition-colors">
+            <Link2 className="w-4.5 h-4.5 stroke-[2.4]" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-display text-base font-bold tracking-tight text-neutral-900 dark:text-white leading-none block">
-                LinkPulse
+                Linko
               </span>
-              {isAdminSection && (
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 uppercase tracking-wider">
-                  Admin
+              {!isBackendConnected && (
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+                  Local Mode
                 </span>
               )}
             </div>
             <span className="text-[10px] text-neutral-500 font-medium">
-              {isAdminSection ? 'Platform Governance' : 'Intelligent URL Management'}
+              Shorten smarter. Share safer.
             </span>
           </div>
         </Link>
@@ -126,14 +100,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
         <div>
           <p className="px-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-2">
-            {isAdminSection ? 'Administrative Controls' : 'User Workspace'}
+            User Workspace
           </p>
           <nav className="space-y-1">
-            {activeNavList.map((item) => {
+            {userNav.map((item) => {
               const Icon = item.icon;
               const isActive =
                 location.pathname === item.path ||
-                (item.path !== '/app/links' && item.path !== '/app/dashboard' && item.path !== '/admin/overview' && location.pathname.startsWith(item.path));
+                (item.path !== '/app/links' && item.path !== '/app/dashboard' && location.pathname.startsWith(item.path));
               return (
                 <Link
                   key={item.path}
@@ -142,13 +116,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 min-h-[44px] text-xs font-medium rounded-xl transition-all whitespace-nowrap',
                     isActive
-                      ? isAdminSection
-                        ? 'bg-neutral-900 text-white font-medium shadow-2xs border-l-2 border-amber-500'
-                        : 'bg-neutral-900 text-white font-medium shadow-2xs'
+                      ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-semibold shadow-2xs'
                       : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100'
                   )}
                 >
-                  <Icon className={cn('w-4 h-4 shrink-0', isActive ? (isAdminSection ? 'text-amber-400' : 'text-white') : 'text-neutral-500')} />
+                  <Icon className={cn('w-4 h-4 shrink-0', isActive ? 'text-white dark:text-neutral-900' : 'text-neutral-500')} />
                   <span>{item.label}</span>
                 </Link>
               );
@@ -156,63 +128,52 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
 
-        {/* Portal Switcher for Admins */}
-        {user.role === 'admin' && (
-          <div className="pt-2 px-1">
-            {isAdminSection ? (
-              <Link
-                to="/app/dashboard"
-                onClick={() => setMobileDrawerOpen(false)}
-                className="w-full flex items-center justify-between p-2.5 text-xs rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-              >
-                <span className="font-medium">← User Workspace</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            ) : (
-              <Link
-                to="/admin/overview"
-                onClick={() => setMobileDrawerOpen(false)}
-                className="w-full flex items-center justify-between p-2.5 text-xs rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                  <span className="font-semibold">Admin Portal</span>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            )}
-          </div>
-        )}
+        {/* Link to Admin Preview */}
+        <div className="pt-2 px-1">
+          <Link
+            to="/admin"
+            onClick={() => setMobileDrawerOpen(false)}
+            className="w-full flex items-center justify-between p-2.5 text-xs rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span className="font-semibold">Admin Preview</span>
+            </div>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
       </div>
 
       {/* User profile footer */}
-      <div className="p-3 border-t border-slate-200 dark:border-slate-800">
-        <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900/60">
+      <div className="p-3 border-t border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-neutral-800/60 border border-neutral-200/60 dark:border-neutral-800">
           <div className="min-w-0 pr-2">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
-                {user.name}
+              <span className="text-xs font-semibold text-neutral-900 dark:text-neutral-100 truncate">
+                {activeUser.name}
               </span>
-              <Badge variant={user.role === 'admin' ? 'danger' : 'info'} size="sm">
-                {user.role}
+              <Badge variant={isBackendConnected ? 'success' : 'outline'} size="sm">
+                {isBackendConnected ? 'Online' : 'Local'}
               </Badge>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate font-mono">
-              {user.email}
+            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate font-mono">
+              {activeUser.email}
             </p>
           </div>
 
-          <button
-            onClick={async () => {
-              await logout();
-              navigate('/login');
-            }}
-            title="Log out"
-            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors cursor-pointer"
-            aria-label="Log out"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
+          {user && (
+            <button
+              onClick={async () => {
+                await logout();
+                navigate('/auth/login');
+              }}
+              title="Log out"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-neutral-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors cursor-pointer"
+              aria-label="Log out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -257,6 +218,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
+            <Link
+              to="/shorten"
+              className="text-xs px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 transition-colors"
+            >
+              Guest Shorten
+            </Link>
             <button
               onClick={toggleTheme}
               aria-label="Toggle dark mode"
@@ -266,6 +233,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </header>
+
+        {/* Local Mode Notice banner if offline */}
+        {!isBackendConnected && (
+          <div className="bg-neutral-100 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 px-4 py-2 text-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
+              <Info className="w-3.5 h-3.5 text-neutral-800 dark:text-neutral-200 shrink-0" />
+              <span>
+                <strong>Local Workspace Mode:</strong> Storing links, QR codes, and click simulations in browser storage.
+              </span>
+            </div>
+            <Link
+              to="/admin"
+              className="text-[11px] font-semibold text-neutral-900 dark:text-white underline hover:opacity-80 shrink-0"
+            >
+              Preview Admin Portal →
+            </Link>
+          </div>
+        )}
 
         {/* Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">

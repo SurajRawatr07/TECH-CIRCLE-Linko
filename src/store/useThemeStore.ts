@@ -17,7 +17,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   initTheme: () => {
     if (typeof window === 'undefined') return;
     try {
-      const stored = localStorage.getItem('linkpulse_theme') as ThemeMode | null;
+      const stored = (localStorage.getItem('linko_theme') || localStorage.getItem('linkpulse_theme')) as ThemeMode | null;
       const initialTheme = stored || 'system';
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const effective = initialTheme === 'system' ? (prefersDark ? 'dark' : 'light') : initialTheme;
@@ -36,7 +36,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
 
   setTheme: (theme: ThemeMode) => {
     try {
-      localStorage.setItem('linkpulse_theme', theme);
+      localStorage.setItem('linko_theme', theme);
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const effective = theme === 'system' ? (prefersDark ? 'dark' : 'light') : theme;
 

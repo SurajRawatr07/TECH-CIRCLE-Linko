@@ -48,7 +48,7 @@ export function AdminLoginPage() {
             Administrative Portal
           </div>
           <h1 className="text-xl sm:text-2xl font-bold font-display text-white">
-            LinkPulse Governance & Safety
+            Linko Governance & Safety
           </h1>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
             Administrative monitoring, blocklist management, destination guardian, and policy configuration.
