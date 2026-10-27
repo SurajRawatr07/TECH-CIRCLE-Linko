@@ -22,9 +22,9 @@ export function LandingPage() {
   function handleQuickStart(e: React.FormEvent) {
     e.preventDefault();
     if (quickUrl.trim()) {
-      navigate(`/register?url=${encodeURIComponent(quickUrl.trim())}`);
+      navigate(`/guest?url=${encodeURIComponent(quickUrl.trim())}`);
     } else {
-      navigate('/register');
+      navigate('/guest');
     }
   }
 
@@ -105,18 +105,18 @@ export function LandingPage() {
                 style={{ textWrap: 'balance' }}
                 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-normal text-neutral-900 dark:text-white tracking-tight leading-[1.12]"
               >
-                Make long links{' '}
+                Shorten Links.{' '}
                 <span className="relative inline-block whitespace-nowrap">
-                  <em className="text-[#b45309] dark:text-amber-500 not-italic font-normal">short & smart</em>
+                  <em className="text-teal-600 dark:text-teal-400 not-italic font-normal">Strengthen Trust.</em>
                 </span>
               </h1>
 
               <div className="max-w-xl space-y-2 text-base sm:text-[17px] text-neutral-600 dark:text-neutral-300 leading-[1.65] font-body">
                 <p>
-                  Create clean short links, track real-time click intelligence, and safeguard your audience.
+                  High-performance Base62 URL shortener with Link Risk Radar, Destination Change Guardian, and real-time click intelligence.
                 </p>
-                <p>
-                  Built with atomic redirect precision, enterprise domain safety, and high-resolution QR generation.
+                <p className="text-sm text-neutral-500">
+                  Try instantly as a guest without signing up, or create a free account to manage links and campaigns.
                 </p>
               </div>
 

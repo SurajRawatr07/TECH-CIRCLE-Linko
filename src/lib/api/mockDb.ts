@@ -158,9 +158,8 @@ class MockDb {
     const salt = generateSalt();
     const passwordHash = await hashPassword(passwordPlain, salt);
 
-    // First registered account becomes Admin automatically; all later accounts are normal Users.
-    const isFirst = this.users.length === 0;
-    const role: 'admin' | 'user' = isFirst ? 'admin' : 'user';
+    // Every registered account in the user portal is a standard user
+    const role: 'user' = 'user';
 
     const newUser: User = {
       id: `usr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -173,16 +172,6 @@ class MockDb {
     };
 
     this.users.push(newUser);
-
-    // If first user, automatically generate seed campaigns, tags, 20 links, and 1000 clicks
-    if (isFirst) {
-      const seed = createInitialSeedData(newUser.id);
-      this.campaigns.push(...seed.campaigns);
-      this.tags.push(...seed.tags);
-      this.links.push(...seed.links);
-      this.clicks.push(...seed.clicks);
-    }
-
     this.save();
     await this.setSession(newUser);
     return newUser;

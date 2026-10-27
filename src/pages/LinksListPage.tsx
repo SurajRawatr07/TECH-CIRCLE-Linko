@@ -235,6 +235,36 @@ export function LinksListPage() {
     }
   }
 
+  function handleExportCSV() {
+    if (!links.length) {
+      toastError('No links available to export.');
+      return;
+    }
+    const headers = ['id', 'title', 'shortCode', 'originalUrl', 'clicksCount', 'isActive', 'createdAt'];
+    const rows = links.map((l) =>
+      [
+        `"${l.id}"`,
+        `"${(l.title || '').replace(/"/g, '""')}"`,
+        `"${l.shortCode}"`,
+        `"${l.originalUrl.replace(/"/g, '""')}"`,
+        l.clicksCount,
+        l.isActive,
+        `"${l.createdAt}"`,
+      ].join(',')
+    );
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `linkpulse_links_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    success(`Exported ${links.length} link(s) to CSV!`);
+  }
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -248,7 +278,17 @@ export function LinksListPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs"
+            onClick={handleExportCSV}
+            title="Export all links to CSV"
+          >
+            <Download className="w-3.5 h-3.5 mr-1" />
+            <span>Export CSV</span>
+          </Button>
           <Link to="/app/links/import">
             <Button variant="outline" size="sm" className="text-xs">
               <FileSpreadsheet className="w-3.5 h-3.5 mr-1" />

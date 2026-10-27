@@ -53,24 +53,7 @@ export function AdminOverviewPage() {
     loadAdminData();
   }, []);
 
-  if (user?.role !== 'admin') {
-    return (
-      <Card className="max-w-md mx-auto text-center p-8 space-y-4 border-rose-200">
-        <Shield className="w-10 h-10 text-rose-500 mx-auto" />
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-          Administrator Access Required
-        </h2>
-        <p className="text-xs text-slate-500">
-          This section is restricted to LinkPulse platform administrators.
-        </p>
-        <Link to="/app/dashboard">
-          <Button variant="primary" size="sm">
-            Return to User Dashboard
-          </Button>
-        </Link>
-      </Card>
-    );
-  }
+
 
   if (isLoading || !stats) {
     return (

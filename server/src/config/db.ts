@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
+// Fail fast on buffering so API calls do not hang if DB is disconnected
+mongoose.set('bufferCommands', false);
+
 let mongoMemoryServer: MongoMemoryServer | null = null;
 let isConnected = false;
 
@@ -26,19 +29,23 @@ export async function connectDB(): Promise<typeof mongoose> {
   }
 
   // Fallback to high-performance embedded MongoMemoryServer
-  if (!mongoMemoryServer) {
-    console.log('⚡ Starting high-performance embedded MongoDB server...');
-    mongoMemoryServer = await MongoMemoryServer.create({
-      instance: {
-        dbName: 'linkpulse',
-      },
-    });
-  }
+  try {
+    if (!mongoMemoryServer) {
+      console.log('⚡ Starting high-performance embedded MongoDB server...');
+      mongoMemoryServer = await MongoMemoryServer.create({
+        instance: {
+          dbName: 'linkpulse',
+        },
+      });
+    }
 
-  const uri = mongoMemoryServer.getUri();
-  await mongoose.connect(uri);
-  isConnected = true;
-  console.log(`✅ Embedded MongoDB cluster active at ${uri} (db: linkpulse)`);
+    const uri = mongoMemoryServer.getUri();
+    await mongoose.connect(uri);
+    isConnected = true;
+    console.log(`✅ Embedded MongoDB cluster active at ${uri} (db: linkpulse)`);
+  } catch (memErr: any) {
+    console.warn(`⚠️ Embedded MongoDB cluster could not be created (${memErr.message}). Continuing in offline mode.`);
+  }
 
   return mongoose;
 }

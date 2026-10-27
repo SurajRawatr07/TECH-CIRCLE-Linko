@@ -37,15 +37,6 @@ export function AdminUsersPage() {
     loadUsers();
   }, []);
 
-  if (user?.role !== 'admin') {
-    return (
-      <Card className="max-w-md mx-auto text-center p-8 space-y-4">
-        <Shield className="w-10 h-10 text-rose-500 mx-auto" />
-        <h2 className="text-lg font-bold">Admin Privileges Required</h2>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div>

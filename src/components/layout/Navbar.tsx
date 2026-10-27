@@ -28,17 +28,29 @@ export function Navbar() {
           </div>
         </Link>
 
-        {/* Navigation Links: Exactly Home, How It Works, FAQ */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-600 dark:text-neutral-300">
+        {/* Navigation Links */}
+        <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-neutral-600 dark:text-neutral-300">
           <Link to="/" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
             Home
           </Link>
-          <a href="#how-it-works" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
+          <Link
+            to="/guest"
+            className="flex items-center gap-1.5 text-neutral-900 dark:text-neutral-100 font-semibold hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
+          >
+            <span>Guest Shorten</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+              No Sign Up
+            </span>
+          </Link>
+          <a href="/#how-it-works" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
             How It Works
           </a>
-          <a href="#faq" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
-            FAQ
-          </a>
+          <Link
+            to="/admin/signin"
+            className="hover:text-amber-600 dark:hover:text-amber-400 text-xs text-neutral-500 dark:text-neutral-400 transition-colors"
+          >
+            Admin UI
+          </Link>
         </nav>
 
         {/* Actions & Theme toggle */}
@@ -64,14 +76,14 @@ export function Navbar() {
             <div className="flex items-center gap-2.5">
               <button
                 type="button"
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/signin')}
                 className="pearl-btn-pearl inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium cursor-pointer"
               >
                 Sign In
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/register')}
+                onClick={() => navigate('/signup')}
                 className="pearl-btn-dark inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium cursor-pointer"
               >
                 Get Started
@@ -110,20 +122,28 @@ export function Navbar() {
             >
               Home
             </Link>
+            <Link
+              to="/guest"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 font-semibold text-sky-600 dark:text-sky-400 flex items-center justify-between"
+            >
+              <span>Guest Shortener</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300">No login</span>
+            </Link>
             <a
-              href="#how-it-works"
+              href="/#how-it-works"
               onClick={() => setMobileMenuOpen(false)}
               className="px-3 py-2.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
             >
               How It Works
             </a>
-            <a
-              href="#faq"
+            <Link
+              to="/admin/signin"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              className="px-3 py-2.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-amber-600 dark:text-amber-400"
             >
-              FAQ
-            </a>
+              Admin Portal UI Preview
+            </Link>
           </div>
           <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 flex flex-col gap-2">
             {user ? (
@@ -144,7 +164,7 @@ export function Navbar() {
                   className="pearl-btn-pearl w-full py-2.5 rounded-xl text-sm font-medium"
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    navigate('/login');
+                    navigate('/signin');
                   }}
                 >
                   Sign In
@@ -154,7 +174,7 @@ export function Navbar() {
                   className="pearl-btn-dark w-full py-2.5 rounded-xl text-sm font-medium"
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    navigate('/register');
+                    navigate('/signup');
                   }}
                 >
                   Get Started

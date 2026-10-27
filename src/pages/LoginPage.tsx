@@ -26,11 +26,7 @@ export function LoginPage() {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  function fillDemoCredentials() {
-    setEmail('demo.user@linkpulse.test');
-    setPassword('DemoUser@123');
-    setErrors({});
-  }
+
 
   function validateEmailOnBlur() {
     const res = EmailSchema.safeParse(email);
@@ -111,24 +107,24 @@ export function LoginPage() {
           </p>
         </div>
 
-        {/* Demo User Credentials Box */}
-        <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/90 border border-neutral-200 dark:border-neutral-800 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-900 dark:text-white">
-              <KeyRound className="w-3.5 h-3.5 text-neutral-700 dark:text-neutral-300" />
-              <span>Demo User Credentials</span>
-            </div>
-            <button
-              type="button"
-              onClick={fillDemoCredentials}
-              className="text-[11px] font-semibold text-neutral-900 dark:text-white bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 px-2.5 py-1 rounded-md transition-colors cursor-pointer"
-            >
-              Fill Demo Credentials
-            </button>
+        {/* Honest Local Demo Authentication Box */}
+        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+          <div className="flex items-center gap-1.5 font-semibold text-slate-900 dark:text-white">
+            <Shield className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+            <span>Frontend Prototype Authentication</span>
           </div>
-          <div className="text-[11px] font-mono text-neutral-600 dark:text-neutral-300 space-y-0.5">
-            <p><span className="text-neutral-400">Email:</span> demo.user@linkpulse.test</p>
-            <p><span className="text-neutral-400">Password:</span> DemoUser@123</p>
+          <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+            In this frontend-only build, sign in with an account created via the application's{' '}
+            <Link to="/signup" className="text-teal-700 dark:text-teal-300 font-semibold underline">
+              Sign Up form
+            </Link>
+            . Passwords are salted and hashed locally in browser storage using the native Web Crypto API.
+          </p>
+          <div className="pt-1 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px]">
+            <span className="text-slate-500">Need immediate shortening?</span>
+            <Link to="/guest" className="font-semibold text-teal-600 dark:text-teal-400 hover:underline">
+              Try Guest Shortener →
+            </Link>
           </div>
         </div>
 

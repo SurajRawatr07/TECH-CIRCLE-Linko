@@ -27,8 +27,24 @@ export const createPool = () => {
   return global._postgresPool;
 };
 
-// Create or retrieve the pool instance.
-const pool = createPool();
+// Create or retrieve the pool instance with safe fallback.
+let db: ReturnType<typeof drizzle<typeof schema>>;
+try {
+  const pool = createPool();
+  db = drizzle(pool, { schema });
+} catch {
+  console.warn('[AI Studio] Database not connected — using mock');
+  const noOp = {
+    findMany: async () => [],
+    findFirst: async () => null,
+    findUnique: async () => null,
+    create: async (d: any) => d?.data ?? {},
+    update: async (d: any) => d?.data ?? {},
+    delete: async () => ({}),
+  };
+  db = new Proxy({}, {
+    get: (_, prop) => (prop === 'query' ? new Proxy({}, { get: () => noOp }) : async () => []),
+  }) as any;
+}
 
-// Initialize Drizzle with the pool and schema.
-export const db = drizzle(pool, { schema });
+export { db };

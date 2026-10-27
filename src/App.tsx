@@ -6,11 +6,13 @@ import { useThemeStore } from './store/useThemeStore';
 // Layouts
 import { PublicLayout } from './components/layout/PublicLayout';
 import { AppLayout } from './components/layout/AppLayout';
+import { AdminLayout } from './components/layout/AdminLayout';
 
 // Public Pages
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
+import { GuestPage } from './pages/GuestPage';
 import { RedirectPage } from './pages/RedirectPage';
 import { PublicBioPage } from './pages/PublicBioPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -37,6 +39,10 @@ import { AdminLinksPage } from './pages/admin/AdminLinksPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AdminAbusePage } from './pages/admin/AdminAbusePage';
 import { AdminBlocklistPage } from './pages/admin/AdminBlocklistPage';
+import { AdminDestinationAlertsPage } from './pages/admin/AdminDestinationAlertsPage';
+import { AdminAnomaliesPage } from './pages/admin/AdminAnomaliesPage';
+import { AdminAuditLogPage } from './pages/admin/AdminAuditLogPage';
+import { AdminPoliciesPage } from './pages/admin/AdminPoliciesPage';
 
 export default function App() {
   const { init: initAuth } = useAuthStore();
@@ -60,10 +66,42 @@ export default function App() {
           }
         />
         <Route
+          path="/guest"
+          element={
+            <PublicLayout>
+              <GuestPage />
+            </PublicLayout>
+          }
+        />
+        <Route
           path="/login"
           element={
             <PublicLayout>
               <LoginPage />
+            </PublicLayout>
+          }
+        />
+        <Route
+          path="/signin"
+          element={
+            <PublicLayout>
+              <LoginPage />
+            </PublicLayout>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicLayout>
+              <SignupPage />
+            </PublicLayout>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <PublicLayout>
+              <SignupPage />
             </PublicLayout>
           }
         />
@@ -76,14 +114,13 @@ export default function App() {
           }
         />
         <Route
-          path="/register"
+          path="/admin/signin"
           element={
             <PublicLayout>
-              <SignupPage />
+              <AdminLoginPage />
             </PublicLayout>
           }
         />
-        <Route path="/signup" element={<Navigate to="/register" replace />} />
 
         {/* Public Redirect & Bio Pages */}
         <Route path="/r/:code" element={<RedirectPage />} />
@@ -202,46 +239,78 @@ export default function App() {
           }
         />
 
-        {/* Admin Routes */}
+        {/* Admin Routes - Rendered within Dedicated AdminLayout */}
         <Route path="/admin" element={<Navigate to="/admin/overview" replace />} />
         <Route
           path="/admin/overview"
           element={
-            <AppLayout>
+            <AdminLayout>
               <AdminOverviewPage />
-            </AppLayout>
+            </AdminLayout>
           }
         />
         <Route
           path="/admin/links"
           element={
-            <AppLayout>
+            <AdminLayout>
               <AdminLinksPage />
-            </AppLayout>
+            </AdminLayout>
           }
         />
         <Route
           path="/admin/users"
           element={
-            <AppLayout>
+            <AdminLayout>
               <AdminUsersPage />
-            </AppLayout>
+            </AdminLayout>
           }
         />
         <Route
           path="/admin/abuse"
           element={
-            <AppLayout>
+            <AdminLayout>
               <AdminAbusePage />
-            </AppLayout>
+            </AdminLayout>
           }
         />
         <Route
           path="/admin/blocklist"
           element={
-            <AppLayout>
+            <AdminLayout>
               <AdminBlocklistPage />
-            </AppLayout>
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/destinations"
+          element={
+            <AdminLayout>
+              <AdminDestinationAlertsPage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/anomalies"
+          element={
+            <AdminLayout>
+              <AdminAnomaliesPage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/audit"
+          element={
+            <AdminLayout>
+              <AdminAuditLogPage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/policies"
+          element={
+            <AdminLayout>
+              <AdminPoliciesPage />
+            </AdminLayout>
           }
         />
 

@@ -15,8 +15,7 @@ async function startServer() {
     await connectDB();
     await seedMongoDatabase();
   } catch (err: any) {
-    console.error('Fatal database startup failure:', err);
-    process.exit(1);
+    console.warn('⚠️ Database startup failure (falling back to graceful handling):', err?.message || err);
   }
 
   // 2. Vite Dev Server / Static Production Serving

@@ -16,6 +16,7 @@ import {
   Plus,
   CheckCircle2,
   ExternalLink,
+  Download,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuthStore } from '../store/useAuthStore';
@@ -24,11 +25,14 @@ import { linksApi, campaignsApi, tagsApi, adminApi } from '../lib/api';
 import { generateShortCode, checkRateLimit } from '../lib/utils';
 import { validateUrl, validateAlias, checkPasswordRules } from '../lib/validators';
 import { getBaseShortUrl } from '../lib/utils';
+import { analyzeUrlRisk, RiskReport } from '../lib/security/riskRadar';
+import { generateBase62Code, validateDestinationUrl } from '../lib/shortener/base62';
 import { Campaign, Tag } from '../types';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
 
 export function CreateLinkPage() {
   const { user } = useAuthStore();
@@ -71,6 +75,7 @@ export function CreateLinkPage() {
   const [urlCheck, setUrlCheck] = useState<{ valid: boolean; error?: string; hostname?: string }>({
     valid: false,
   });
+  const [riskReport, setRiskReport] = useState<RiskReport | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdLink, setCreatedLink] = useState<{
     id: string;
@@ -87,20 +92,24 @@ export function CreateLinkPage() {
     }
   }, [user]);
 
-  // URL check
+  // URL check and live Risk Radar evaluation
   useEffect(() => {
     if (!originalUrl.trim()) {
       setUrlCheck({ valid: false });
+      setRiskReport(null);
       return;
     }
-    let candidate = originalUrl.trim();
-    if (!candidate.startsWith('http://') && !candidate.startsWith('https://')) {
-      candidate = 'https://' + candidate;
-    }
-    const res = validateUrl(candidate, blocklist);
-    setUrlCheck(res);
-    if (res.valid && res.hostname && !title) {
-      setTitle(res.hostname);
+    const valResult = validateDestinationUrl(originalUrl);
+    setUrlCheck(valResult);
+
+    if (valResult.valid && valResult.normalizedUrl) {
+      const risk = analyzeUrlRisk(valResult.normalizedUrl, blocklist);
+      setRiskReport(risk);
+      if (valResult.parsedUrl?.hostname && !title) {
+        setTitle(valResult.parsedUrl.hostname);
+      }
+    } else {
+      setRiskReport(null);
     }
   }, [originalUrl, blocklist, title]);
 
@@ -119,7 +128,7 @@ export function CreateLinkPage() {
   }, [shortCode]);
 
   function handleRegenerateAlias() {
-    setShortCode(generateShortCode(6));
+    setShortCode(generateBase62Code([], 6));
   }
 
   function handleAddTag() {
@@ -278,6 +287,51 @@ export function CreateLinkPage() {
             error={originalUrl && !urlCheck.valid ? urlCheck.error : undefined}
             required
           />
+
+          {/* Live Link Risk Radar Verdict */}
+          {riskReport && (
+            <div
+              className={`p-3.5 rounded-xl border text-xs space-y-2 ${
+                riskReport.level === 'high'
+                  ? 'bg-rose-50 border-rose-200 text-rose-900 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-200'
+                  : riskReport.level === 'caution'
+                  ? 'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-200'
+                  : 'bg-emerald-50 border-emerald-200 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-900/60 dark:text-emerald-200'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 font-semibold">
+                  {riskReport.level === 'high' ? (
+                    <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                  ) : riskReport.level === 'caution' ? (
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  )}
+                  <span>
+                    Link Risk Radar: {riskReport.level.toUpperCase()} RISK (Safety Score: {100 - riskReport.score}/100)
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-black/5 dark:bg-white/10">
+                  Heuristic Check
+                </span>
+              </div>
+
+              {riskReport.indicators.length > 0 ? (
+                <ul className="space-y-1 list-disc list-inside text-[11px] opacity-90">
+                  {riskReport.indicators.map((ind, i) => (
+                    <li key={i}>
+                      <strong>{ind.title}:</strong> {ind.explanation}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-[11px] opacity-90">
+                  Destination uses standard secure HTTPS with clean structural parameters.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -617,7 +671,51 @@ export function CreateLinkPage() {
           </div>
 
           <div className="p-4 bg-white rounded-xl shadow-xs border border-slate-200 inline-block">
-            <QRCodeSVG value={createdLink.fullUrl} size={130} />
+            <QRCodeSVG id="created-qr-svg" value={createdLink.fullUrl} size={140} />
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-2.5 pt-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const svg = document.getElementById('created-qr-svg');
+                if (!svg) return;
+                const svgData = new XMLSerializer().serializeToString(svg);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                canvas.width = 512;
+                canvas.height = 512;
+                img.onload = () => {
+                  if (ctx) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 32, 32, 448, 448);
+                    const a = document.createElement('a');
+                    a.download = `linkpulse-qr-${createdLink.shortCode}.png`;
+                    a.href = canvas.toDataURL('image/png');
+                    a.click();
+                    success('QR code downloaded as PNG');
+                  }
+                };
+                img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+              }}
+              className="min-h-[40px] text-xs gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download QR PNG</span>
+            </Button>
+
+            <Link
+              to={`/r/${createdLink.shortCode}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-semibold text-neutral-800 dark:text-neutral-200"
+            >
+              <span>Test in Simulator</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
           </div>
 
           <div className="flex justify-center gap-3 pt-2">
@@ -627,7 +725,7 @@ export function CreateLinkPage() {
               onClick={() => {
                 setOriginalUrl('');
                 setTitle('');
-                setShortCode(generateShortCode(6));
+                setShortCode(generateBase62Code([], 6));
                 setStep(1);
               }}
               className="min-h-[40px]"

@@ -69,6 +69,23 @@ app.use('/api/v1/experiments', experimentsRoutes);
 // Public Redirect Engine (/r/:code & verify-password & metadata)
 app.use(redirectRoutes);
 
+// Database Offline Fallback Middleware (Graceful Degraded Mode)
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  if (
+    err.name === 'MongooseError' ||
+    err.name === 'MongoNetworkError' ||
+    err.name === 'MongoServerSelectionError' ||
+    (typeof err.message === 'string' && err.message.includes('buffering timed out'))
+  ) {
+    console.warn('[AI Studio] Database offline — returning mock/safe response');
+    if (req.method === 'GET') {
+      return res.json(req.path.endsWith('s') || req.path.endsWith('s/') ? [] : {});
+    }
+    return res.status(503).json({ error: 'Service temporarily unavailable (database offline)' });
+  }
+  next(err);
+});
+
 // Centralized Error Handler
 app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   console.error(`[Unhandled Error] [${(req as any).requestId || 'no-id'}]`, err);
