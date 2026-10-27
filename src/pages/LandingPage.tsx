@@ -5,19 +5,16 @@ import {
   ArrowRight,
   CheckCircle2,
   ChevronDown,
-  Sparkles,
   ClipboardPaste,
   SlidersHorizontal,
   Share2,
 } from 'lucide-react';
 import { HeroPhoneQrIllustration } from '../components/common/HeroPhoneQrIllustration';
-import { AdvancedFeaturesModal } from '../components/common/AdvancedFeaturesModal';
 
 export function LandingPage() {
   const navigate = useNavigate();
   const [quickUrl, setQuickUrl] = useState('');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [featuresModalOpen, setFeaturesModalOpen] = useState(false);
 
   function handleQuickStart(e: React.FormEvent) {
     e.preventDefault();
@@ -84,21 +81,10 @@ export function LandingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
             {/* Left Column: Heading, Subtitle, Form, Feature trigger */}
             <div className="lg:col-span-7 flex flex-col items-start text-left space-y-6">
-              <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex items-center gap-2.5">
                 <span className="text-xs font-semibold tracking-widest uppercase text-neutral-500 dark:text-neutral-400">
                   URL SHORTENER & ANALYTICS PLATFORM
                 </span>
-                <span className="text-neutral-300 dark:text-neutral-700">·</span>
-                {/* Button to open Advanced Features Modal */}
-                <button
-                  type="button"
-                  onClick={() => setFeaturesModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white border border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors cursor-pointer"
-                  aria-label="Explore Advanced Features"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-[#b45309] dark:text-amber-400" />
-                  <span>Explore Advanced Features</span>
-                </button>
               </div>
 
               <h1
@@ -295,11 +281,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Advanced Features Modal Popup */}
-      <AdvancedFeaturesModal
-        isOpen={featuresModalOpen}
-        onClose={() => setFeaturesModalOpen(false)}
-      />
     </div>
   );
 }

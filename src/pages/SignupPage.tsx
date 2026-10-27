@@ -281,7 +281,7 @@ export function SignupPage() {
 
         <div className="p-3 bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs text-neutral-600 dark:text-neutral-400 flex items-center gap-2.5">
           <Shield className="w-4 h-4 text-neutral-800 dark:text-neutral-200 shrink-0" />
-          <span>Accounts are secured with bcrypt password hashing and cryptographic session tokens.</span>
+          <span>Accounts are secured with cryptographic salt hashing (Web Crypto SHA-256) and local session management.</span>
         </div>
 
         <p className="text-center text-xs text-neutral-600">
